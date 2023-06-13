@@ -392,7 +392,9 @@ def run(cm, args):
         do_build = args.build
         do_run = args.run
 
-    flags = {"tool": args.tool, "target": args.target}
+    flags = {"target": args.target or "default"}
+    if args.tool:
+        flags["tool"] = args.tool
     for flag in args.flag:
         if flag[0] == "+":
             flags[flag[1:]] = True
@@ -433,15 +435,19 @@ def run_backend(
         "No tool was supplied on command line or found in '{}' core description"
     )
     core = _get_core(cm, system)
+
+    target = flags["target"]
     try:
-        tool = core.get_tool(flags)
+        flags = dict(core.get_flags(target), **flags)
     except SyntaxError as e:
         logger.error(str(e))
         exit(1)
+
+    tool = flags["tool"]
+
     if not tool:
         logger.error(tool_error.format(system))
         exit(1)
-    flags["tool"] = tool
     build_root = build_root_arg or os.path.join(
         cm.config.build_root, core.name.sanitized_name
     )
@@ -710,7 +716,7 @@ def get_parser():
     parser_library_add.add_argument(
         "--global",
         action="store_true",
-        help="Use the global FuseSoc config file in $XDG_CONFIG_HOME/fusesoc/fusesoc.conf",
+        help="Use the global FuseSoC config file in $XDG_CONFIG_HOME/fusesoc/fusesoc.conf",
     )
     parser_library_add.set_defaults(func=add_library)
 
